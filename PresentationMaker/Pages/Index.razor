@@ -1,0 +1,557 @@
+﻿@page "/"
+@using System.ComponentModel.DataAnnotations
+@using System.Net.Http.Headers
+@using System.Net.Http
+@using System.Text.Json
+@using System.Text
+@using System.Text.RegularExpressions
+@using PresentationMaker.Models
+@inject NavigationManager navigationManager
+@inject IJSRuntime jsRuntime
+@inject HttpClient httpClient
+
+
+<style>
+
+</style>
+        <!-- Portfolio Section-->
+<section class="page-section portfolio" id="generate">
+    <div class="container">
+        <!-- Portfolio Section Heading-->
+        <h2 class="text-center text-uppercase text-secondary mb-0">Generate Presentation</h2>
+        <!-- Icon Divider-->
+        <div class="divider-custom">
+            <div class="divider-custom-line"></div>
+            <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+            <div class="divider-custom-line"></div>
+        </div>
+        <!-- Portfolio Grid Items-->
+        <div class="row justify-content-center">
+            <div class="col-md-7">
+                <!-- Toggle buttons for "By Form" and "By Chat" -->
+                <div class="android-navbar mb-4">
+                    <div @onclick="() => currentView = ViewMode.ByForm" class="android-navbar-item @((currentView == ViewMode.ByForm) ? "active" : "")">
+                        By Form
+                        <div class="android-navbar-indicator"></div>
+                    </div>
+                    <div @onclick="() => currentView = ViewMode.ByChat" class="android-navbar-item @((currentView == ViewMode.ByChat) ? "active" : "")">
+                        By Chat
+                        <div class="android-navbar-indicator"></div>
+                    </div>
+                </div>
+
+                @if (currentView == ViewMode.ByForm)
+                {
+                    <EditForm Model="@presentation" OnValidSubmit="GeneratePresentation">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <br />
+                        <div class="container">
+                            <div class="row">
+                                    <!-- Left-side fields -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="mb-1 fw-bold" for="topic" >Topic</label>
+                                            <InputText id="topic" @bind-Value="presentation.Topic" class="form-control" placeholder="Enter the topic here" style="height: 60px;" />
+                                        </div>
+                                        <div class="form-group mt-3">
+                                            <label class="mb-1 fw-bold" for="instructions" >Instructions</label>
+                                            <InputText id="instructions" @bind-Value="presentation.Instructions" class="form-control" placeholder="Enter any special instructions " style="height: 60px;" />
+                                        </div>
+                                    </div>
+                                    <!-- Right-side fields -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="mb-1 fw-bold" for="numPages" >Number of Pages</label>
+                                            <InputNumber id="numPages" @bind-Value="presentation.NumPages" class="form-control" style="height: 60px;" />
+                                        </div>
+                                        <div class="form-group mt-3">
+                                            <label class="mb-1 fw-bold" for="dropdown" >Template Name</label>
+                                            <select class="form-control" id="dropdown" @bind="presentation.SelectedOption" style="height: 60px;">
+                                                @foreach (var option in optionsList)
+                                                {
+                                                    <option value="@option">@option</option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            <br />
+                            <div class="text-center mt-2 bt-3">
+                                <button type="submit" class="btn btn-primary" style="height: 55px;">Generate presentation</button>
+                            </div>
+                        </div>
+                    </EditForm>
+                }
+                else if (currentView == ViewMode.ByChat)
+                {
+                    <EditForm Model="@chatPresentation" OnValidSubmit="GeneratePresentationWithChat">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <br />
+                        <!-- Render chat-related fields here -->
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="mb-1 fw-bold" for="topic">Describe what kind of presentation you want</label>
+                                        <textarea id="desc" @bind="chatPresentation.Prompt" class="form-control" placeholder="Enter the text here" style="height: 160px;"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
+                            <div class="text-center mt-2 bt-3">
+                                <button type="submit" class="btn btn-primary" style="height: 55px;">Generate presentation</button>
+                            </div>
+                            <br />
+                            <p>@responseBodyHtml</p>
+                        </div>
+                    </EditForm>
+                }
+
+                <div class="loading-container" style="@($"display: {(isLoading ? "flex" : "none")}")">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+        <!-- About Section-->
+        <section class="page-section bg-primary text-white mb-0" id="about">
+            <div class="container">
+                <!-- About Section Heading-->
+                <h2 class="page-section-heading text-center text-uppercase text-white">About</h2>
+                <p class="text-center lead">Learn more about our Presentation Generator.</p>
+                <!-- Icon Divider-->
+                <div class="divider-custom divider-light">
+                    <div class="divider-custom-line"></div>
+                    <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                    <div class="divider-custom-line"></div>
+                </div>
+                <!-- About Section Content-->
+                <div class="row">
+                    <div class="col-lg-4 ms-auto"><p class="lead">Our mission is to simplify the process of creating presentations and empower individuals and teams to communicate their ideas effectively.</p></div>
+                    <div class="col-lg-4 me-auto"><p class="lead">We are a dedicated team of designers and developers working together to provide you with the best presentation creation experience.</p></div>
+                </div>
+               
+            </div>
+        </section>
+        <!-- Contact Section-->
+        <section class="page-section" id="contact">
+            <div class="container">
+                <!-- Contact Section Heading-->
+                <h2 class="page-section-heading text-center text-uppercase text-secondary ">Contact Us</h2>
+                <!-- Icon Divider-->
+                <div class="divider-custom">
+                    <div class="divider-custom-line"></div>
+                    <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                    <div class="divider-custom-line"></div>
+                </div>
+                <!-- Contact Section Form-->
+                <div class="row">
+                    <div class="me-auto">
+                        <p class="lead text-center">
+                        We're here to help. Reach out to us with your questions and feedback.<br />
+                        If you have any questions or need assistance, you can contact us at:
+                        <br />
+                        Email: contact@presentationgenerator.com
+                        <br />
+                        Phone: +1 (123) 456-7890
+                    </p>
+                    </div>
+                </div>
+            </div>
+        </section>    
+        <!-- Portfolio Modals-->
+        <!-- Portfolio Modal 1-->
+        <div class="portfolio-modal modal fade" id="portfolioModal1" tabindex="-1" aria-labelledby="portfolioModal1" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header border-0"><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                    <div class="modal-body text-center pb-5">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <!-- Portfolio Modal - Title-->
+                                    <h2 class="portfolio-modal-title text-secondary text-uppercase mb-0">Log Cabin</h2>
+                                    <!-- Icon Divider-->
+                                    <div class="divider-custom">
+                                        <div class="divider-custom-line"></div>
+                                        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                                        <div class="divider-custom-line"></div>
+                                    </div>
+                                    <!-- Portfolio Modal - Image-->
+                                    <img class="img-fluid rounded mb-5" src="temp/assets/img/portfolio/cabin.png" alt="..." />
+                                    <!-- Portfolio Modal - Text-->
+                                    <p class="mb-4">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
+                                    <button class="btn btn-primary" data-bs-dismiss="modal">
+                                        <i class="fas fa-xmark fa-fw"></i>
+                                        Close Window
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Portfolio Modal 2-->
+        <div class="portfolio-modal modal fade" id="portfolioModal2" tabindex="-1" aria-labelledby="portfolioModal2" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header border-0"><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                    <div class="modal-body text-center pb-5">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <!-- Portfolio Modal - Title-->
+                                    <h2 class="portfolio-modal-title text-secondary text-uppercase mb-0">Tasty Cake</h2>
+                                    <!-- Icon Divider-->
+                                    <div class="divider-custom">
+                                        <div class="divider-custom-line"></div>
+                                        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                                        <div class="divider-custom-line"></div>
+                                    </div>
+                                    <!-- Portfolio Modal - Image-->
+                                    <img class="img-fluid rounded mb-5" src="temp/assets/img/portfolio/cake.png" alt="..." />
+                                    <!-- Portfolio Modal - Text-->
+                                    <p class="mb-4">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
+                                    <button class="btn btn-primary" data-bs-dismiss="modal">
+                                        <i class="fas fa-xmark fa-fw"></i>
+                                        Close Window
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Portfolio Modal 3-->
+        <div class="portfolio-modal modal fade" id="portfolioModal3" tabindex="-1" aria-labelledby="portfolioModal3" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header border-0"><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                    <div class="modal-body text-center pb-5">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <!-- Portfolio Modal - Title-->
+                                    <h2 class="portfolio-modal-title text-secondary text-uppercase mb-0">Circus Tent</h2>
+                                    <!-- Icon Divider-->
+                                    <div class="divider-custom">
+                                        <div class="divider-custom-line"></div>
+                                        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                                        <div class="divider-custom-line"></div>
+                                    </div>
+                                    <!-- Portfolio Modal - Image-->
+                                    <img class="img-fluid rounded mb-5" src="temp/assets/img/portfolio/circus.png" alt="..." />
+                                    <!-- Portfolio Modal - Text-->
+                                    <p class="mb-4">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
+                                    <button class="btn btn-primary" data-bs-dismiss="modal">
+                                        <i class="fas fa-xmark fa-fw"></i>
+                                        Close Window
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Portfolio Modal 4-->
+        <div class="portfolio-modal modal fade" id="portfolioModal4" tabindex="-1" aria-labelledby="portfolioModal4" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header border-0"><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                    <div class="modal-body text-center pb-5">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <!-- Portfolio Modal - Title-->
+                                    <h2 class="portfolio-modal-title text-secondary text-uppercase mb-0">Controller</h2>
+                                    <!-- Icon Divider-->
+                                    <div class="divider-custom">
+                                        <div class="divider-custom-line"></div>
+                                        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                                        <div class="divider-custom-line"></div>
+                                    </div>
+                                    <!-- Portfolio Modal - Image-->
+                                    <img class="img-fluid rounded mb-5" src="temp/assets/img/portfolio/game.png" alt="..." />
+                                    <!-- Portfolio Modal - Text-->
+                                    <p class="mb-4">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
+                                    <button class="btn btn-primary" data-bs-dismiss="modal">
+                                        <i class="fas fa-xmark fa-fw"></i>
+                                        Close Window
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Portfolio Modal 5-->
+        <div class="portfolio-modal modal fade" id="portfolioModal5" tabindex="-1" aria-labelledby="portfolioModal5" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header border-0"><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                    <div class="modal-body text-center pb-5">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <!-- Portfolio Modal - Title-->
+                                    <h2 class="portfolio-modal-title text-secondary text-uppercase mb-0">Locked Safe</h2>
+                                    <!-- Icon Divider-->
+                                    <div class="divider-custom">
+                                        <div class="divider-custom-line"></div>
+                                        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                                        <div class="divider-custom-line"></div>
+                                    </div>
+                                    <!-- Portfolio Modal - Image-->
+                                    <img class="img-fluid rounded mb-5" src="temp/assets/img/portfolio/safe.png" alt="..." />
+                                    <!-- Portfolio Modal - Text-->
+                                    <p class="mb-4">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
+                                    <button class="btn btn-primary" data-bs-dismiss="modal">
+                                        <i class="fas fa-xmark fa-fw"></i>
+                                        Close Window
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Portfolio Modal 6-->
+        <div class="portfolio-modal modal fade" id="portfolioModal6" tabindex="-1" aria-labelledby="portfolioModal6" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header border-0"><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                    <div class="modal-body text-center pb-5">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <div class="col-lg-8">
+                                    <!-- Portfolio Modal - Title-->
+                                    <h2 class="portfolio-modal-title text-secondary text-uppercase mb-0">Submarine</h2>
+                                    <!-- Icon Divider-->
+                                    <div class="divider-custom">
+                                        <div class="divider-custom-line"></div>
+                                        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                                        <div class="divider-custom-line"></div>
+                                    </div>
+                                    <!-- Portfolio Modal - Image-->
+                                    <img class="img-fluid rounded mb-5" src="temp/assets/img/portfolio/submarine.png" alt="..." />
+                                    <!-- Portfolio Modal - Text-->
+                                    <p class="mb-4">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
+                                    <button class="btn btn-primary" data-bs-dismiss="modal">
+                                        <i class="fas fa-xmark fa-fw"></i>
+                                        Close Window
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+<style>
+.android-navbar {
+    display: flex;
+    color: black;
+    font-size: 18px;
+    position: relative;
+}
+.android-navbar-item {
+    cursor: pointer;
+    padding: 16px;
+}
+.android-navbar-indicator {
+    position: absolute;
+    bottom: 2;
+    height: 4px;
+    background-color: seagreen;
+    transition: width 0.3s ease-in-out;
+}
+.android-navbar-item.active .android-navbar-indicator {
+    width: 10.2%;
+}
+/* Customize the styles as needed */
+.loading-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.8); /* Add a semi-transparent overlay */
+    z-index: 9999; /* Ensure the loading container is on top */
+}
+</style>
+@code {
+    private bool isLoading = false;
+    private enum ViewMode
+    {
+        ByForm,
+        ByChat
+    }
+    private MarkupString responseBodyHtml;
+    private ViewMode currentView = ViewMode.ByForm;
+
+    Presentation presentation = new Presentation();
+    ChatPresentation chatPresentation = new ChatPresentation();
+
+    List<string> optionsList = new List<string>{"Academic Elite","Minimalist Elegance","Azure Versatility","Universal Template"};
+
+   
+    private void ToggleView(ViewMode view)
+    {
+        currentView = view;
+    }
+
+    private async Task GeneratePresentation()
+    {
+        try
+        {
+            isLoading = true;
+
+            var payload = new
+            {
+                topic = presentation.Topic,
+                instructions = presentation.Instructions ?? "",
+                number_of_pages = presentation.NumPages,
+                negative_prompt = "",
+                collection_name = "", 
+                files = new string[] { }, 
+                template_name = presentation.SelectedOption ?? optionsList[0] 
+            };
+
+            // Convert the payload to JSON
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            // Set up the HttpClient
+            using (var httpClient = new HttpClient())
+            {
+                // Set the request headers
+                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "ZAIGHAMNETTTTTTTT!!1234!!CHUTIKRRRR!!!");
+
+                // Set up the request content
+                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+                // Make the POST request
+                var response = await httpClient.PostAsync("https://api.academiai.org/class/temp/", content);
+
+                // Handle the response as needed
+                if (response.IsSuccessStatusCode)
+                {
+                    var presentationBytes = await response.Content.ReadAsByteArrayAsync();
+
+                // Trigger file download using JavaScript interop
+                await jsRuntime.InvokeVoidAsync("downloadFile", presentationBytes, $"{presentation.Topic}.pptx");
+                    isLoading = false;
+                }
+                else
+                {
+                    isLoading = false;
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error: {response.StatusCode}, Message: {errorMessage}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Print or log the exception information
+            Console.WriteLine($"Exception: {ex.Message}");
+
+            // If you want to log the exception to the browser console, you can use JavaScript interop
+            //await jsRuntime.InvokeVoidAsync("console.error", $"Exception: {ex.Message}");
+        }
+    }
+
+        private async Task GeneratePresentationWithChat()
+    {
+        try
+        {
+            isLoading = true;
+
+            // Construct the request payload
+            var payload = new
+            {
+                prompt = chatPresentation.Prompt,
+                language = "English"
+            };
+
+            // Convert the payload to JSON
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            // Set up the HttpClient
+            using (var httpClient = new HttpClient())
+            {
+                // Set the request headers
+                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "ZAIGHAMNETTTTTTTT!!1234!!CHUTIKRRRR!!!");
+
+                // Set up the request content
+                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+                // Make the POST request
+                var response = await httpClient.PostAsync("https://api.academiai.org/class/temp/chat", content);
+
+                // Handle the response as needed
+                if (response.IsSuccessStatusCode)
+                {
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    var link = ExtractLinkFromJson(responseBody);
+
+                    // Create HTML content with a clickable link
+                    responseBodyHtml = new MarkupString($"<div>Your Presentation is ready. Click this link to download <a href='{link}' target='_blank'>{link}</a></div>");
+                    isLoading = false;
+                }
+                else
+                {
+                    isLoading = false;
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error: {response.StatusCode}, Message: {errorMessage}");
+                  
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Print or log the exception information
+            Console.WriteLine($"Exception: {ex.Message}");
+
+        }
+    string ExtractLinkFromJson(string json)
+    {
+        try
+        {
+            var jsonObject = JsonDocument.Parse(json);
+            var root = jsonObject.RootElement;
+            var response = root.GetProperty("response").GetString();
+            
+            var linkStartIndex = response.IndexOf('(') + 1;
+            var linkEndIndex = response.IndexOf(')');
+            var linkLength = linkEndIndex - linkStartIndex;
+            
+            return response.Substring(linkStartIndex, linkLength);
+        }
+        catch (Exception ex)
+        {
+            // Handle exception if JSON parsing fails
+            return "Error extracting link";
+        }
+    }
+
+}
+
+}
+

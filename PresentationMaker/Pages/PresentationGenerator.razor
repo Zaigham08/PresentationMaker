@@ -1,0 +1,94 @@
+﻿@page "/presentation"
+@inject HttpClient HttpClient
+@*@using newtonsoft.json *@
+
+<PageTitle>Presentation Generator</PageTitle>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h1 class="text-center">Generate Presentation</h1>
+
+            <EditForm Model="@presentation" OnValidSubmit="GeneratePresentation">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <br />
+                <div class="form-group">
+                    <label for="topic" class="mb-2">Topic</label>
+                    <InputText id="topic" @bind-Value="presentation.Topic" class="form-control" placeholder="Enter the topic..." />
+                </div>
+                <div class="form-group mt-3">
+                    <label for="instructions" class="mb-2">Instructions</label>
+                    <InputText id="instructions" @bind-Value="presentation.Instructions" class="form-control" placeholder="Enter instructions..." />
+                </div>
+                <div class="form-group mt-3">
+                    <label for="numPages" class="mb-2">Number of Pages</label>
+                    <InputNumber id="numPages" @bind-Value="presentation.NumPages" class="form-control" placeholder="Enter the number of pages..." />
+                </div>
+                <div class="form-group mt-3">
+                    <label for="negativeInstruction" class="mb-2">Negative Instruction</label>
+                    <InputText id="negativeInstruction" @bind-Value="presentation.NegativeInstruction" class="form-control" placeholder="Enter negative instruction..." />
+                </div>
+                <br/>
+                <div class="text-center mt-2">
+                    <button type="submit" class="btn btn-primary">Generate presentation</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private Presentation presentation = new Presentation();
+
+    private class Presentation
+    {
+        public string? Topic { get; set; }
+        public string? Instructions { get; set; }
+        public int NumPages { get; set; }
+        public string? NegativeInstruction { get; set; }
+    }
+
+    private async Task GeneratePresentation()
+{
+    // Create an object to represent the data to be sent in the request body
+    //var requestData = new
+    //{
+    //    Topic = presentation.Topic,
+    //    Instructions = presentation.Instructions,
+    //    NumPages = presentation.NumPages,
+    //    NegativeInstruction = presentation.NegativeInstruction
+    //};
+
+    //// Serialize the data to JSON (you can use the Newtonsoft.Json library or System.Text.Json)
+    //var requestBody = JsonConvert.SerializeObject(requestData); // If using Newtonsoft.Json
+
+    //// Define the HTTP request headers
+    //var requestHeaders = new Dictionary<string, string>
+    //{
+    //    { "Authorization", "Bearer YourAccessToken" }, // Example: Add authorization token if needed
+    //    { "Content-Type", "application/json" } // Content-Type for JSON data
+    //};
+
+    //// Send the HTTP POST request
+    //var response = await HttpClient.PostAsync("YourApiEndpoint", new StringContent(requestBody, Encoding.UTF8, "application/json"));
+
+    //// Check if the request was successful (HTTP status code 200-299)
+    //if (response.IsSuccessStatusCode)
+    //{
+    //    // Request was successful, you can handle the response here
+    //    var responseContent = await response.Content.ReadAsStringAsync();
+    //    // Process the response content as needed
+    //}
+    //else
+    //{
+    //    // Request failed, handle error as needed
+    //    // For example, you can check the status code and log an error message
+    //    var statusCode = response.StatusCode;
+    //    var errorMessage = await response.Content.ReadAsStringAsync();
+    //    // Handle the error
+    //}
+}
+
+}

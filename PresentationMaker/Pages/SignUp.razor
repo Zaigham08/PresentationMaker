@@ -1,0 +1,46 @@
+﻿@page "/signup"
+
+<PageTitle>Signup Page</PageTitle>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h1 class="text-center">Signup</h1>
+
+            <EditForm Model="@signupModel">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <br />
+                <div class="form-group">
+                    <label for="username" class="mb-2">Username</label>
+                    <InputText id="username" @bind-Value="signupModel.Username" class="form-control" placeholder="Enter a username..." />
+                </div>
+                <div class="form-group">
+                    <label for="email" class="mb-2">Email</label>
+                    <InputText id="email" @bind-Value="signupModel.Email" class="form-control" placeholder="Enter your email..." />
+                </div>
+                <div class="form-group">
+                    <label for="password" class="mb-2">Password</label>
+                    <InputText id="password" @bind-Value="signupModel.Password" type="password" class="form-control" placeholder="Enter a password..." />
+                </div>
+                <br />
+                <div class="text-center mt-2">
+                    <button type="submit" class="btn btn-primary">Signup</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private SignupModel signupModel = new SignupModel();
+
+    private class SignupModel
+    {
+        public string Username { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+
+
+}
